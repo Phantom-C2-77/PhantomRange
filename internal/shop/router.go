@@ -65,6 +65,9 @@ func New() *App {
 	app.mux.HandleFunc("/scoreboard", handleScoreboard)
 	app.mux.HandleFunc("/flag", handleFlagSubmit)
 
+	// Extra vulnerability endpoints (28 more vulns = 50 total)
+	RegisterExtraRoutes(app.mux)
+
 	// Internal service (for SSRF)
 	go startInternalService()
 

@@ -32,7 +32,7 @@ func render(w http.ResponseWriter, title, content string) {
 </nav>
 <main>%s</main>
 <footer class="footer">
-	<p>👻 PhantomShop — Intentionally Vulnerable E-Commerce | <a href="/vulns">22 Vulnerabilities</a> | <a href="https://github.com/Phantom-C2-77/PhantomRange">GitHub</a></p>
+	<p>👻 PhantomShop — Intentionally Vulnerable E-Commerce | <a href="/vulns">50 Vulnerabilities</a> | <a href="https://github.com/Phantom-C2-77/PhantomRange">GitHub</a></p>
 </footer>
 </body>
 </html>`, title, content)

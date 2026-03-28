@@ -170,6 +170,60 @@ func seedData() {
 		{"xxe_import", "FLAG{xx3_f1l3_r34d}", "XXE", "Hard", "XXE in product import XML", 300},
 		{"crypto_reset", "FLAG{pr3d1ct4bl3_t0k3n}", "Crypto", "Medium", "Predictable password reset token", 200},
 		{"lfi_template", "FLAG{l0c4l_f1l3_1nclud3}", "File Inclusion", "Hard", "LFI in template rendering", 300},
+
+		// ── 28 NEW VULNERABILITIES ──
+
+		// SQL Injection (3 more)
+		{"sqli_error", "FLAG{3rr0r_b4s3d_sql1}", "SQL Injection", "Medium", "Error-based SQLi in product filter", 200},
+		{"sqli_time", "FLAG{t1m3_b4s3d_sql1}", "SQL Injection", "Hard", "Time-based blind SQLi on user lookup", 300},
+		{"sqli_stacked", "FLAG{st4ck3d_qu3r13s}", "SQL Injection", "Hard", "Stacked queries to insert admin user", 350},
+
+		// XSS (3 more)
+		{"xss_svg", "FLAG{svg_xss_upl04d}", "XSS", "Medium", "XSS via SVG file upload", 200},
+		{"xss_href", "FLAG{j4v4scr1pt_hr3f}", "XSS", "Medium", "JavaScript in href attribute on user website", 200},
+		{"xss_csp_bypass", "FLAG{csp_byp4ss_xss}", "XSS", "Hard", "Bypass weak CSP to execute XSS", 300},
+
+		// Authentication (2 more)
+		{"auth_default_creds", "FLAG{d3f4ult_cr3ds}", "Auth", "Easy", "Default credentials on admin panel", 100},
+		{"auth_pass_in_response", "FLAG{p4ss_1n_r3sp0ns3}", "Auth", "Easy", "Password leaked in API response", 100},
+
+		// IDOR (2 more)
+		{"idor_delete", "FLAG{d3l3t3_0th3r_r3v13w}", "IDOR", "Medium", "Delete another user's review", 200},
+		{"idor_mass_assign", "FLAG{m4ss_4ss1gnm3nt}", "IDOR", "Hard", "Mass assignment to set role=admin", 300},
+
+		// SSRF (2 more)
+		{"ssrf_cloud_meta", "FLAG{cl0ud_m3t4d4t4}", "SSRF", "Hard", "Access cloud metadata via SSRF", 300},
+		{"ssrf_file_proto", "FLAG{f1l3_pr0t0c0l}", "SSRF", "Hard", "Read files via file:// protocol", 300},
+
+		// File Upload (2 more)
+		{"upload_ext_bypass", "FLAG{d0ubl3_3xt3ns10n}", "File Upload", "Medium", "Bypass extension filter with .php.jpg", 200},
+		{"upload_magic_bytes", "FLAG{m4g1c_byt3s}", "File Upload", "Hard", "Bypass magic bytes check with polyglot", 300},
+
+		// Business Logic (3 more)
+		{"business_race", "FLAG{r4c3_c0nd1t10n}", "Business Logic", "Hard", "Race condition on coupon apply", 300},
+		{"business_sku_swap", "FLAG{sku_sw4p_ch34p}", "Business Logic", "Medium", "Swap expensive product SKU with cheap one", 200},
+		{"business_gift_card", "FLAG{g1ft_c4rd_fr4ud}", "Business Logic", "Hard", "Generate unlimited gift card balance", 350},
+
+		// Open Redirect (2)
+		{"open_redir_login", "FLAG{0p3n_r3d1r3ct_l0g1n}", "Open Redirect", "Easy", "Open redirect after login via next= param", 100},
+		{"open_redir_checkout", "FLAG{0p3n_r3d1r3ct_ch3ck0ut}", "Open Redirect", "Medium", "Open redirect in checkout callback", 150},
+
+		// Path Traversal (2)
+		{"path_traversal_img", "FLAG{p4th_tr4v3rs4l_1mg}", "Path Traversal", "Medium", "Read files via image path traversal", 200},
+		{"path_traversal_export", "FLAG{p4th_tr4v3rs4l_3xp0rt}", "Path Traversal", "Hard", "Download arbitrary files via export endpoint", 300},
+
+		// Information Disclosure (3)
+		{"info_debug_endpoint", "FLAG{d3bug_3ndp01nt}", "Info Disclosure", "Easy", "Debug endpoint leaks server info", 100},
+		{"info_error_stack", "FLAG{st4ck_tr4c3_l34k}", "Info Disclosure", "Easy", "Stack trace in error response", 100},
+		{"info_git_exposed", "FLAG{g1t_3xp0s3d}", "Info Disclosure", "Medium", "Git directory accessible", 200},
+
+		// Insecure Deserialization (2)
+		{"deser_cookie", "FLAG{c00k13_d3s3r14l}", "Deserialization", "Hard", "Insecure deserialization in session cookie", 300},
+		{"deser_json_inject", "FLAG{js0n_1nj3ct10n}", "Deserialization", "Medium", "JSON injection in order notes", 200},
+
+		// HTTP Security (2)
+		{"clickjack_no_xframe", "FLAG{cl1ckj4ck_fr4m3}", "HTTP Security", "Easy", "Missing X-Frame-Options allows clickjacking", 100},
+		{"http_method_tamper", "FLAG{m3th0d_t4mp3r}", "HTTP Security", "Medium", "PUT/DELETE methods accepted on sensitive endpoints", 200},
 	}
 
 	for _, f := range flags {
