@@ -8,184 +8,122 @@
                                                       /_/
 ```
 
-**A realistic vulnerable e-commerce application for penetration testing practice.** Not isolated CTF challenges — a real online fashion store with **50 vulnerabilities** embedded naturally in the shopping flow.
+**A realistic vulnerable e-commerce application for penetration testing practice.**
+
+PhantomShop is a fully functional online fashion store with **50 hidden vulnerabilities** across **14 categories**. Your goal: find and exploit every vulnerability to capture all 50 flags.
+
+---
+
+## Screenshots
+
+### Homepage
+![Homepage](docs/assets/screenshot-homepage.png)
+
+### Product Catalog
+![Products](docs/assets/screenshot-products.png)
+
+### Vulnerability Tracker
+![Vulns](docs/assets/screenshot-vulns.png)
+
+### Scoreboard
+![Scoreboard](docs/assets/screenshot-scoreboard.png)
 
 ---
 
 ## Quick Start
 
 ```bash
+# Clone and run
 git clone https://github.com/Phantom-C2-77/PhantomRange.git
 cd PhantomRange
 go run ./cmd/server/
+
+# Open http://localhost:9000
 ```
 
-Open **http://localhost:9000** and start hacking.
+### Requirements
+- Go 1.22+ ([install](https://go.dev/dl/))
 
----
-
-## The Store
-
-PhantomShop is a fashion e-commerce site selling shoes, clothing, and accessories. It has all the features of a real online store — and every feature has at least one vulnerability:
-
-- **Product catalog** with search and filtering (SQLi, XSS)
-- **User accounts** — registration, login, profiles, avatars (Auth bypass, IDOR, file upload)
-- **Shopping cart & checkout** with coupons and gift cards (Business logic flaws)
-- **Product reviews** (Stored XSS)
-- **Admin panel** with invoice generator and XML import (Command injection, XXE)
-- **REST API** for products, users, and orders (CORS, IDOR, method tampering)
-- **Newsletter subscription** with URL preview (SSRF)
-- **Contact form** with redirect (CRLF injection, open redirect)
-- **Password reset** (Predictable tokens)
-- **Debug/error endpoints** (Information disclosure)
-
----
-
-## Vulnerabilities — 50 Flags Across 14 Categories
-
-| Category | Count | Difficulty | Where to Look |
-|----------|-------|-----------|---------------|
-| **SQL Injection** | 6 | Easy → Hard | `/login`, `/search`, `/products/filter`, `/api/user/lookup`, `/order/` |
-| **XSS** | 6 | Easy → Hard | `/search`, product reviews, profile bio, SVG upload, href, CSP bypass |
-| **Authentication** | 5 | Easy → Hard | `/login` (brute force), cookies (role tampering), 2FA bypass, default creds, password in API |
-| **IDOR / Access Control** | 5 | Easy → Hard | `/order/1337`, `/profile?id=1`, `/api/user/1`, review delete, mass assignment |
-| **Business Logic** | 6 | Medium → Hard | Price manipulation, negative quantity, coupon abuse, race condition, SKU swap, gift card fraud |
-| **SSRF** | 3 | Medium → Hard | `/api/newsletter` (internal service, cloud metadata, file:// protocol) |
-| **File Upload** | 3 | Medium → Hard | `/profile/avatar` (no validation, extension bypass, magic bytes) |
-| **Command Injection** | 1 | Medium | `/admin/invoice` (invoice generator) |
-| **Path Traversal** | 2 | Medium → Hard | `/static/img/../../etc/passwd`, `/api/export/file` |
-| **Open Redirect** | 2 | Easy → Medium | `/auth/callback?next=`, `/checkout/callback?return_url=` |
-| **Information Disclosure** | 3 | Easy → Medium | `/debug`, `/api/error` (stack trace), `/.git/config` |
-| **Deserialization** | 2 | Medium → Hard | Session cookies, `/api/order/notes` (JSON injection) |
-| **HTTP Security** | 2 | Easy → Medium | Missing X-Frame-Options (clickjacking), PUT/DELETE without auth |
-| **CORS / CRLF / XXE** | 3 | Medium → Hard | Wildcard CORS on `/api/*`, CRLF in `/contact?redirect=`, XXE in `/api/import` |
-| **Crypto** | 1 | Medium | Predictable MD5 password reset tokens |
-| **Total** | **50** | | |
-
----
-
-## Sample Attacks
-
-### SQL Injection (Login Bypass)
-```
-Username: ' OR 1=1--
-Password: anything
-```
-
-### Stored XSS (Product Review)
-```
-Comment: <script>alert('XSS')</script>
-```
-
-### IDOR (View Admin Profile)
+### Docker (coming soon)
 ```bash
-curl http://localhost:9000/api/user/1
-```
-
-### Business Logic (Price Manipulation)
-```bash
-curl -X POST http://localhost:9000/cart/add -d "product_id=1&price=0.01&quantity=1"
-```
-
-### SSRF (Internal Service)
-```bash
-curl -X POST http://localhost:9000/api/newsletter -d "email=x@x.com&url=http://127.0.0.1:9999/internal/admin"
-```
-
-### Command Injection (Invoice)
-```bash
-curl -b "role=admin" "http://localhost:9000/admin/invoice?order=1;id"
-```
-
-### Information Disclosure
-```bash
-curl http://localhost:9000/debug
-curl http://localhost:9000/.git/config
-```
-
-### Open Redirect
-```
-http://localhost:9000/auth/callback?next=https://evil.com
-```
-
-### Path Traversal
-```bash
-curl "http://localhost:9000/api/export/file?file=../../../etc/passwd"
-```
-
-### HTTP Method Tampering
-```bash
-curl -X PUT http://localhost:9000/api/admin/user
-curl -X DELETE http://localhost:9000/api/admin/user
+docker run -p 9000:9000 phantomshop
 ```
 
 ---
 
-## Flag Submission
+## What is PhantomShop?
 
-When you find a flag (`FLAG{...}`), submit it via the API:
+A realistic fashion e-commerce website with:
+- Product browsing, search, and filtering
+- User accounts with profiles and avatars
+- Shopping cart, checkout, and coupons
+- Product reviews and ratings
+- Admin panel with management tools
+- REST API
+- Newsletter, contact form, gift cards
 
+Everything works like a real store. The vulnerabilities are embedded naturally in the code — just like real-world applications.
+
+---
+
+## The Challenge
+
+**50 flags** are hidden throughout the application. Each flag looks like:
+
+```
+FLAG{s0m3th1ng_h3r3}
+```
+
+Find them by exploiting vulnerabilities in the application. Track your progress at **http://localhost:9000/scoreboard**.
+
+Submit flags:
 ```bash
 curl -X POST http://localhost:9000/flag \
   -H "Content-Type: application/json" \
-  -d '{"flag":"FLAG{sql_1nj3ct10n_l0g1n}"}'
+  -d '{"flag":"FLAG{...}"}'
 ```
 
-Or visit **http://localhost:9000/scoreboard** to track progress.
+### Difficulty Breakdown
+
+| Difficulty | Flags | Description |
+|-----------|-------|-------------|
+| Easy | 12 | Foundational attacks, minimal tooling needed |
+| Medium | 24 | Requires tools and technique chaining |
+| Hard | 14 | Advanced exploitation, creative thinking |
+
+### Categories
+
+SQL Injection • XSS • Authentication • IDOR • Business Logic • SSRF • File Upload • Command Injection • Path Traversal • Open Redirect • Information Disclosure • Deserialization • HTTP Security • Cryptography
+
+Visit **http://localhost:9000/vulns** for the full list with difficulty ratings.
 
 ---
 
-## Pages & Endpoints
+## Recommended Tools
 
-| Page | URL | Vulnerability |
-|------|-----|--------------|
-| Homepage | `/` | — |
-| Products | `/products` | — |
-| Search | `/search?q=` | SQLi, Reflected XSS |
-| Product Detail | `/product/{id}` | Stored XSS (reviews) |
-| Login | `/login` | SQLi, Brute Force |
-| Register | `/register` | — |
-| Profile | `/profile?id=` | IDOR, DOM XSS |
-| Avatar Upload | `/profile/avatar` | File Upload |
-| Orders | `/order/{id}` | IDOR |
-| Cart | `/cart/add` | Price manipulation, negative qty |
-| Checkout | `/checkout` | — |
-| Coupon | `/apply-coupon` | Negative discount |
-| Gift Cards | `/giftcard` | Predictable codes |
-| Contact | `/contact?redirect=` | CRLF injection |
-| Newsletter | `/api/newsletter` | SSRF |
-| Admin Panel | `/admin` | Cookie tampering (role=admin) |
-| Invoice | `/admin/invoice?order=` | Command injection |
-| XML Import | `/api/import` | XXE |
-| Export | `/api/export/file?file=` | Path traversal |
-| User API | `/api/user/{id}` | IDOR, CORS |
-| User Details | `/api/user/details/{id}` | Password in response |
-| Debug | `/debug` | Info disclosure |
-| Git Config | `/.git/config` | Exposed credentials |
-| Error Page | `/api/error` | Stack trace leak |
-| Login Callback | `/auth/callback?next=` | Open redirect |
-| Checkout Callback | `/checkout/callback?return_url=` | Open redirect |
-| Product Filter | `/products/filter?sort=` | Error-based SQLi |
-| User Lookup | `/api/user/lookup?username=` | Time-based blind SQLi |
-| Review Delete | `/api/review/delete?id=` | IDOR |
-| User Update | `/api/user/update` | Mass assignment |
-| Order Notes | `/api/order/notes` | JSON injection |
-| Admin API | `/api/admin/user` | HTTP method tampering |
-| User Website | `/profile/website?url=` | javascript: XSS |
+- [Burp Suite](https://portswigger.net/burp) — HTTP proxy and scanner
+- [curl](https://curl.se/) — command-line HTTP client
+- [sqlmap](https://sqlmap.org/) — SQL injection automation
+- [ffuf](https://github.com/ffuf/ffuf) — web fuzzer
+- [Python](https://python.org) — scripting exploits
+- Browser DevTools — inspect requests, cookies, DOM
 
 ---
 
-## Hints
+## Tips
 
-Visit **http://localhost:9000/vulns** to see all 50 vulnerabilities with descriptions and difficulty levels.
-
-Walkthroughs are not included in the public repository. Figure it out yourself — that's the point! 🚩
+- Explore every feature of the store as a normal user first
+- Check all input fields, URL parameters, cookies, and headers
+- Look at HTTP responses carefully — errors and headers reveal information
+- Not every vulnerability is on a web page — check the API too
+- Some flags require chaining multiple vulnerabilities together
+- The admin panel exists but you need to find your way in
 
 ---
 
 ## Disclaimer
 
-**This application is intentionally vulnerable.** Do NOT expose it to the internet. Run it locally or in an isolated environment for training purposes only.
+**This application is intentionally vulnerable.** Do NOT expose it to the internet. Run it locally or in an isolated network for training purposes only.
 
 ---
 
