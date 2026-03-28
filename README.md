@@ -1,16 +1,14 @@
-# PhantomRange
+# PhantomShop
 
 ```
-    ___  __                __               ___
-   / _ \/ /  ___ ____  ___/ /____  __ _    / _ \___ ____  ___ ____
-  / ___/ _ \/ _ '/ _ \/ __/ __/ _ \/  ' \  / , _/ _ '/ _ \/ _ '/ -_)
- /_/  /_//_/\_,_/_//_/\__/\__/\___/_/_/_/ /_/|_|\_,_/_//_/\_, /\__/
-                                                          /___/
+   ___  __                __             ____  __
+  / _ \/ /  ___ ____  ___/ /____  __ _  / __/ / /  ___  ___
+ / ___/ _ \/ _ '/ _ \/ __/ __/ _ \/  ' \_\ \ / _ \/ _ \/ _ \
+/_/  /_//_/\_,_/_//_/\__/\__/\___/_/_/_/___//_//_/\___/ .__/
+                                                      /_/
 ```
 
-**A vulnerable training environment for penetration testers.** Practice real-world web vulnerabilities with guided challenges, flags, and walkthroughs.
-
----
+**A realistic vulnerable e-commerce application for penetration testing practice.** Not isolated challenges — a real shopping website with 22 vulnerabilities embedded naturally.
 
 ## Quick Start
 
@@ -18,61 +16,48 @@
 git clone https://github.com/Phantom-C2-77/PhantomRange.git
 cd PhantomRange
 go run ./cmd/server/
+# Open http://localhost:8080
 ```
 
-Open **http://localhost:8080** and start hacking.
+## The Store
 
-## Challenges
+PhantomShop is a fashion store selling shoes, clothing, and accessories. Every feature has at least one vulnerability:
 
-### SQL Injection (4 challenges)
-| # | Challenge | Difficulty | Points |
-|---|-----------|-----------|--------|
-| 1 | Login Bypass | Easy | 100 |
-| 2 | Data Exfiltration (UNION) | Easy | 150 |
-| 3 | Blind SQL Injection | Medium | 250 |
-| 4 | Second-Order SQLi | Hard | 350 |
+- Product catalog with search (SQLi, XSS)
+- User registration and login (Auth bypass, brute force)
+- Shopping cart and checkout (Business logic)
+- Product reviews (Stored XSS)
+- User profiles with avatars (IDOR, file upload)
+- Admin panel (Command injection, XXE)
+- REST API (CORS, IDOR)
+- Newsletter (SSRF)
+- Contact form (CRLF)
+- Password reset (Weak crypto)
 
-### Cross-Site Scripting (4 challenges)
-| # | Challenge | Difficulty | Points |
-|---|-----------|-----------|--------|
-| 1 | Reflected XSS | Easy | 100 |
-| 2 | Stored XSS (Guestbook) | Easy | 150 |
-| 3 | DOM-Based XSS | Medium | 200 |
-| 4 | XSS Filter Bypass | Hard | 300 |
+## Vulnerabilities (22 flags across 10 categories)
 
-### Command Injection (3 challenges)
-| # | Challenge | Difficulty | Points |
-|---|-----------|-----------|--------|
-| 1 | Basic Command Injection | Easy | 100 |
-| 2 | Blind Command Injection | Medium | 200 |
-| 3 | Filtered Command Injection | Hard | 300 |
-
-**Total: 11 challenges, 1750 points**
-
-More categories coming: Authentication, IDOR, SSRF, File Upload, Cryptography
-
-## Features
-
-- **Zero dependencies** — single Go binary, everything embedded
-- **11 challenges** across 3 categories with 3 difficulty levels
-- **Real flags** — `FLAG{...}` hidden in each challenge
-- **Scoreboard** — track your progress and points
-- **Hints** — available for each challenge
-- **Walkthroughs** — step-by-step solutions in `docs/walkthroughs/`
-- **Reset** — clear all progress with one click
+| Category | Vulns | Points | Where |
+|----------|-------|--------|-------|
+| SQL Injection | 3 | 500 | Login, search, orders |
+| XSS | 3 | 450 | Search, reviews, profile |
+| Command Injection | 1 | 200 | Admin invoice |
+| Authentication | 3 | 600 | Login, password reset, 2FA |
+| IDOR | 3 | 300 | Orders, profiles, API |
+| SSRF | 1 | 200 | Newsletter |
+| File Upload | 1 | 200 | Avatar |
+| Business Logic | 3 | 700 | Prices, coupons, quantities |
+| CORS/CRLF/XXE | 3 | 700 | API, contact, import |
+| Crypto | 1 | 200 | Reset tokens |
+| **Total** | **22** | **4,050** | |
 
 ## Walkthroughs
 
-See [docs/walkthroughs/](docs/walkthroughs/) for step-by-step solutions.
+See [docs/walkthroughs/](docs/walkthroughs/) for solutions.
 
 ## Disclaimer
 
-**This application is intentionally vulnerable.** Do NOT expose it to the internet. Run it locally or in an isolated environment for training purposes only.
+**Intentionally vulnerable.** Do NOT expose to the internet.
 
 ## Author
 
 **Opeyemi Kolawole** — [GitHub](https://github.com/Phantom-C2-77)
-
-## License
-
-BSD 3-Clause
