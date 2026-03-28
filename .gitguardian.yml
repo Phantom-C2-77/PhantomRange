@@ -1,0 +1,7 @@
+# PhantomShop is an intentionally vulnerable application.
+# All passwords, keys, and secrets in this repo are FAKE
+# and exist solely for training purposes.
+paths-ignore:
+  - "internal/**"
+  - "docs/**"
+  - "data/**"
