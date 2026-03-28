@@ -9,7 +9,7 @@ import (
 )
 
 func main() {
-	addr := flag.String("addr", ":8080", "Listen address")
+	addr := flag.String("addr", ":9000", "Listen address")
 	flag.Parse()
 
 	fmt.Print("\033[35m")
