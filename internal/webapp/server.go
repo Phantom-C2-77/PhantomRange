@@ -8,8 +8,12 @@ import (
 	"strings"
 
 	"github.com/Phantom-C2-77/PhantomRange/internal/challenges"
+	"github.com/Phantom-C2-77/PhantomRange/internal/challenges/auth"
 	"github.com/Phantom-C2-77/PhantomRange/internal/challenges/cmdi"
+	"github.com/Phantom-C2-77/PhantomRange/internal/challenges/idor"
 	"github.com/Phantom-C2-77/PhantomRange/internal/challenges/sqli"
+	"github.com/Phantom-C2-77/PhantomRange/internal/challenges/ssrf"
+	"github.com/Phantom-C2-77/PhantomRange/internal/challenges/upload"
 	"github.com/Phantom-C2-77/PhantomRange/internal/challenges/xss"
 	"github.com/Phantom-C2-77/PhantomRange/internal/scoreboard"
 )
@@ -42,6 +46,10 @@ func New() *Server {
 	sqli.RegisterRoutes(s.mux)
 	xss.RegisterRoutes(s.mux)
 	cmdi.RegisterRoutes(s.mux)
+	auth.RegisterRoutes(s.mux)
+	idor.RegisterRoutes(s.mux)
+	ssrf.RegisterRoutes(s.mux)
+	upload.RegisterRoutes(s.mux)
 
 	return s
 }
