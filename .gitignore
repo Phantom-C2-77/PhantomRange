@@ -1,0 +1,5 @@
+data/scoreboard.json
+*.exe
+*.out
+build/
+.DS_Store

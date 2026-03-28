@@ -1,0 +1,72 @@
+* { margin:0; padding:0; box-sizing:border-box; }
+body { background:#0a0e1a; color:#e8ecf4; font-family:'Segoe UI',system-ui,sans-serif; line-height:1.6; }
+
+.navbar { background:#111827; padding:14px 24px; border-bottom:1px solid #1f2937; display:flex; justify-content:space-between; align-items:center; position:sticky; top:0; z-index:100; }
+.brand { color:#a78bfa; font-size:20px; font-weight:700; text-decoration:none; }
+.nav-links { display:flex; gap:20px; }
+.nav-links a { color:#9ca3af; text-decoration:none; font-size:14px; transition:color .2s; }
+.nav-links a:hover { color:#e8ecf4; }
+
+.container { max-width:900px; margin:0 auto; padding:24px; }
+
+.challenge-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; }
+.challenge-header h1 { font-size:24px; color:#e8ecf4; }
+.badge { background:rgba(124,58,237,.15); color:#a78bfa; padding:4px 12px; border-radius:20px; font-size:12px; font-weight:600; }
+
+.challenge-form { background:#111827; border:1px solid #1f2937; border-radius:10px; padding:20px; margin-bottom:16px; }
+.form-group { margin-bottom:14px; }
+.form-group label { display:block; font-size:13px; color:#9ca3af; margin-bottom:4px; font-weight:500; }
+.form-group input, .form-group textarea { width:100%; padding:10px 14px; background:#0a0e1a; border:1px solid #374151; border-radius:6px; color:#e8ecf4; font-size:14px; outline:none; }
+.form-group input:focus, .form-group textarea:focus { border-color:#7c3aed; }
+.form-group textarea { min-height:80px; resize:vertical; }
+
+.btn { background:#7c3aed; color:white; border:none; padding:10px 20px; border-radius:6px; font-size:14px; cursor:pointer; font-weight:500; transition:background .2s; text-decoration:none; display:inline-block; }
+.btn:hover { background:#6d28d9; }
+
+.alert { padding:12px 16px; border-radius:8px; margin-bottom:14px; font-size:14px; }
+.alert-success { background:rgba(16,185,129,.15); color:#10b981; border:1px solid rgba(16,185,129,.3); }
+.alert-danger { background:rgba(239,68,68,.15); color:#ef4444; border:1px solid rgba(239,68,68,.3); }
+
+.flag-box { background:linear-gradient(135deg,rgba(124,58,237,.2),rgba(59,130,246,.2)); border:2px solid #7c3aed; border-radius:10px; padding:16px 20px; text-align:center; font-size:18px; font-weight:700; color:#a78bfa; margin:16px 0; animation:glow 2s infinite; }
+@keyframes glow { 0%,100%{box-shadow:0 0 10px rgba(124,58,237,.3)} 50%{box-shadow:0 0 25px rgba(124,58,237,.5)} }
+
+.info-box { background:#111827; border:1px solid #1f2937; border-radius:8px; padding:14px 16px; margin:12px 0; font-size:13px; color:#9ca3af; }
+.info-box code { background:#1f2937; padding:2px 6px; border-radius:4px; color:#f59e0b; font-size:12px; }
+
+.output-box { background:#0c0f1a; border:1px solid #1f2937; border-radius:8px; padding:14px; margin:12px 0; }
+.output-box pre { color:#10b981; font-size:13px; white-space:pre-wrap; word-break:break-all; font-family:'Cascadia Code',monospace; }
+
+.result-table { width:100%; border-collapse:collapse; margin:12px 0; }
+.result-table th { background:#111827; padding:10px 14px; text-align:left; font-size:12px; text-transform:uppercase; color:#6b7280; border-bottom:1px solid #1f2937; }
+.result-table td { padding:10px 14px; border-bottom:1px solid rgba(31,41,55,.5); font-size:14px; }
+
+.profile-box { background:#111827; border:1px solid #1f2937; border-radius:8px; padding:16px; margin:12px 0; }
+.guestbook-entry { background:#111827; border:1px solid #1f2937; border-radius:8px; padding:12px 16px; margin:8px 0; }
+
+/* Challenge listing */
+.challenge-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:14px; }
+.challenge-card { background:#111827; border:1px solid #1f2937; border-radius:10px; padding:18px; transition:all .2s; cursor:pointer; text-decoration:none; color:inherit; display:block; }
+.challenge-card:hover { border-color:#7c3aed; transform:translateY(-2px); box-shadow:0 4px 20px rgba(124,58,237,.15); }
+.challenge-card h3 { font-size:16px; color:#e8ecf4; margin-bottom:6px; }
+.challenge-card .cat { font-size:11px; color:#7c3aed; text-transform:uppercase; letter-spacing:1px; font-weight:600; }
+.challenge-card .desc { font-size:13px; color:#9ca3af; margin-top:8px; }
+.challenge-card .meta { display:flex; justify-content:space-between; margin-top:12px; font-size:12px; }
+.difficulty-easy { color:#10b981; }
+.difficulty-medium { color:#f59e0b; }
+.difficulty-hard { color:#ef4444; }
+.points { color:#3b82f6; font-weight:600; }
+.solved-badge { background:rgba(16,185,129,.15); color:#10b981; padding:2px 8px; border-radius:10px; font-size:11px; }
+
+/* Scoreboard */
+.stats-row { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-bottom:20px; }
+.stat-card { background:#111827; border:1px solid #1f2937; border-radius:10px; padding:18px; text-align:center; }
+.stat-value { font-size:36px; font-weight:800; }
+.stat-label { font-size:12px; color:#6b7280; text-transform:uppercase; letter-spacing:1px; margin-top:4px; }
+
+/* Hero */
+.hero { text-align:center; padding:60px 20px 40px; }
+.hero h1 { font-size:42px; font-weight:800; background:linear-gradient(135deg,#a78bfa,#3b82f6); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+.hero p { color:#9ca3af; font-size:16px; margin-top:10px; max-width:600px; margin-left:auto; margin-right:auto; }
+.hero .btn { margin-top:20px; font-size:16px; padding:12px 32px; }
+
+.category-title { font-size:18px; font-weight:700; color:#a78bfa; margin:24px 0 12px; padding-bottom:8px; border-bottom:1px solid #1f2937; }
