@@ -82,7 +82,7 @@ func handleVulnList(w http.ResponseWriter, r *http.Request) {
 	render(w, "Vulnerabilities", fmt.Sprintf(`
 	<section class="section">
 		<div class="section-header">
-			<h2>All Vulnerabilities (22)</h2>
+			<h2>All Vulnerabilities (50)</h2>
 			<p class="muted">Find and exploit each vulnerability to capture the flag.</p>
 		</div>
 		%s
@@ -103,7 +103,7 @@ func handleScoreboard(w http.ResponseWriter, r *http.Request) {
 		<div class="stats-row">
 			<div class="stat-card"><div class="stat-value" style="color:#a78bfa">%d</div><div class="stat-label">Total Flags</div></div>
 			<div class="stat-card"><div class="stat-value" style="color:#3b82f6">%d</div><div class="stat-label">Total Points</div></div>
-			<div class="stat-card"><div class="stat-value" style="color:#10b981">22</div><div class="stat-label">Vulnerabilities</div></div>
+			<div class="stat-card"><div class="stat-value" style="color:#10b981">50</div><div class="stat-label">Vulnerabilities</div></div>
 		</div>
 		<div class="info-box">
 			<h3>How to Submit Flags</h3>
