@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 	"os/exec"
 	"runtime"
 	"strconv"
@@ -169,6 +170,16 @@ func handleSearch(w http.ResponseWriter, r *http.Request) {
 		products = `<div class="empty-state"><p>No products found.</p></div>`
 	}
 
+	// Detect flags
+	flags := ""
+	qLower := strings.ToLower(q)
+	if strings.Contains(qLower, "union") && strings.Contains(qLower, "select") {
+		flags += `<div class="flag-box">🚩 FLAG{un10n_s3l3ct_pr0ducts}</div>`
+	}
+	if strings.Contains(qLower, "<script") || strings.Contains(qLower, "onerror") || strings.Contains(qLower, "onload") || strings.Contains(qLower, "javascript:") {
+		flags += `<div class="flag-box">🚩 FLAG{r3fl3ct3d_xss_sh0p}</div>`
+	}
+
 	// VULN: Reflected XSS — search term reflected without encoding
 	render(w, "Search Results", fmt.Sprintf(`
 	<section class="section">
@@ -179,8 +190,9 @@ func handleSearch(w http.ResponseWriter, r *http.Request) {
 				<button type="submit" class="btn">Search</button>
 			</form>
 		</div>
+		%s
 		<div class="product-grid">%s</div>
-	</section>`, q, q, products)) // VULN: q is unescaped (XSS + SQLi)
+	</section>`, q, q, flags, products)) // VULN: q is unescaped (XSS + SQLi)
 }
 
 func handleProductDetail(w http.ResponseWriter, r *http.Request) {
@@ -268,6 +280,15 @@ func handleReview(w http.ResponseWriter, r *http.Request) {
 	db.DB.Exec("INSERT INTO reviews (product_id, user_id, username, rating, comment) VALUES (?, 0, ?, ?, ?)",
 		productID, username, rating, comment)
 
+	commentLower := strings.ToLower(comment)
+	if strings.Contains(commentLower, "<script") || strings.Contains(commentLower, "onerror") || strings.Contains(commentLower, "onload") || strings.Contains(commentLower, "javascript:") {
+		render(w, "Review Posted", fmt.Sprintf(`
+		<div class="alert alert-success">Review posted!</div>
+		<div class="flag-box">🚩 FLAG{st0r3d_xss_r3v13w}</div>
+		<a href="/product/%s" class="btn">Back to Product</a>`, productID))
+		return
+	}
+
 	http.Redirect(w, r, "/product/"+productID, 302)
 }
 
@@ -313,14 +334,46 @@ func handleLogin(w http.ResponseWriter, r *http.Request) {
 				<input type="password" name="password" placeholder="Password" required>
 				<button type="submit" class="btn btn-full">Sign In</button>
 			</form>
+			<div class="info-box"><p>🚩 FLAG{n0_r4t3_l1m1t} — No rate limiting on this form!</p></div>
 		</div></div>`)
 		return
+	}
+
+	// Detect SQLi login bypass
+	sqliFlag := ""
+	isSQLi := strings.Contains(username, "'") || strings.Contains(username, "OR") || strings.Contains(username, "--") || strings.Contains(username, "=")
+	if isSQLi {
+		sqliFlag = "FLAG{sql_1nj3ct10n_l0g1n}"
+	}
+	// Detect default credentials
+	defaultCredsFlag := ""
+	if username == "admin" && password == "admin123" {
+		defaultCredsFlag = "FLAG{d3f4ult_cr3ds}"
 	}
 
 	// Set session cookie
 	http.SetCookie(w, &http.Cookie{Name: "user_id", Value: strconv.Itoa(id), Path: "/", MaxAge: 86400})
 	http.SetCookie(w, &http.Cookie{Name: "username", Value: user, Path: "/", MaxAge: 86400})
 	http.SetCookie(w, &http.Cookie{Name: "role", Value: role, Path: "/", MaxAge: 86400}) // VULN: Role in cookie (tamperable)
+
+	if sqliFlag != "" || defaultCredsFlag != "" {
+		flags := ""
+		if sqliFlag != "" {
+			flags += fmt.Sprintf(`<div class="flag-box">🚩 %s</div>`, sqliFlag)
+		}
+		if defaultCredsFlag != "" {
+			flags += fmt.Sprintf(`<div class="flag-box">🚩 %s</div>`, defaultCredsFlag)
+		}
+		render(w, "Login Success", fmt.Sprintf(`
+		<div class="auth-page"><div class="auth-card">
+			<h2>Welcome, %s!</h2>
+			<div class="alert alert-success">Logged in as %s (role: %s)</div>
+			%s
+			<a href="/" class="btn">Continue</a>
+		</div></div>`, user, user, role, flags))
+		return
+	}
+
 	http.Redirect(w, r, "/", 302)
 }
 
@@ -402,10 +455,21 @@ func handleResetPassword(w http.ResponseWriter, r *http.Request) {
 
 	password := r.FormValue("password")
 	token = r.FormValue("token")
+
+	// Check which user this token belongs to (for flag detection)
+	var resetEmail string
+	db.DB.QueryRow("SELECT email FROM users WHERE reset_token = ?", token).Scan(&resetEmail)
+
 	result, _ := db.DB.Exec("UPDATE users SET password = ?, reset_token = '' WHERE reset_token = ?", password, token)
 	affected, _ := result.RowsAffected()
 	if affected > 0 {
-		render(w, "Reset Password", `<div class="alert alert-success">Password reset! <a href="/login">Login</a></div>`)
+		flag := ""
+		if resetEmail != "" {
+			// Token was predictable (MD5 of email + date) — if they got here, they predicted it
+			flag = `<div class="flag-box">🚩 FLAG{pr3d1ct4bl3_t0k3n}</div>
+			<div class="info-box"><p>You predicted the reset token! Token = MD5(email + YYYY-MM-DD)</p></div>`
+		}
+		render(w, "Reset Password", fmt.Sprintf(`<div class="alert alert-success">Password reset! <a href="/login">Login</a></div>%s`, flag))
 	} else {
 		render(w, "Reset Password", `<div class="alert alert-danger">Invalid or expired token.</div>`)
 	}
@@ -465,6 +529,16 @@ func handleProfileEdit(w http.ResponseWriter, r *http.Request) {
 		bio := r.FormValue("bio")
 		// VULN: Stored XSS via bio field
 		db.DB.Exec("UPDATE users SET bio = ? WHERE id = ?", bio, c.Value)
+
+		bioLower := strings.ToLower(bio)
+		if strings.Contains(bioLower, "<img") || strings.Contains(bioLower, "<script") || strings.Contains(bioLower, "onerror") || strings.Contains(bioLower, "onload") {
+			render(w, "Profile Updated", `
+			<div class="alert alert-success">Profile updated!</div>
+			<div class="flag-box">🚩 FLAG{d0m_xss_pr0f1l3}</div>
+			<a href="/profile" class="btn">View Profile</a>`)
+			return
+		}
+
 		http.Redirect(w, r, "/profile", 302)
 		return
 	}
@@ -521,9 +595,27 @@ func handleAvatarUpload(w http.ResponseWriter, r *http.Request) {
 
 	flag := ""
 	lowerName := strings.ToLower(header.Filename)
+	contentStr := string(content)
+	contentLower := strings.ToLower(contentStr)
 	if strings.Contains(lowerName, ".php") || strings.Contains(lowerName, ".jsp") ||
-		strings.Contains(string(content), "<?php") || strings.Contains(string(content), "PHANTOM_SHELL") {
+		strings.Contains(contentStr, "<?php") || strings.Contains(contentStr, "PHANTOM_SHELL") {
 		flag = `<div class="flag-box">🚩 FLAG{sh3ll_upl04d_4v4t4r}</div>`
+	}
+	// Double extension bypass
+	if strings.Contains(lowerName, ".php.") || strings.Contains(lowerName, ".jsp.") || strings.Contains(lowerName, ".aspx.") {
+		flag += `<div class="flag-box">🚩 FLAG{d0ubl3_3xt3ns10n}</div>`
+	}
+	// SVG XSS
+	if strings.HasSuffix(lowerName, ".svg") || strings.Contains(contentLower, "<svg") {
+		if strings.Contains(contentLower, "onload") || strings.Contains(contentLower, "onerror") || strings.Contains(contentLower, "<script") {
+			flag += `<div class="flag-box">🚩 FLAG{svg_xss_upl04d}</div>`
+		}
+	}
+	// Magic bytes bypass (JPEG header + PHP/script content)
+	if len(content) > 4 && content[0] == 0xFF && content[1] == 0xD8 && content[2] == 0xFF {
+		if strings.Contains(contentStr, "<?php") || strings.Contains(contentStr, "<script") {
+			flag += `<div class="flag-box">🚩 FLAG{m4g1c_byt3s}</div>`
+		}
 	}
 
 	render(w, "Upload Avatar", fmt.Sprintf(`
@@ -553,6 +645,7 @@ func handleCartAdd(w http.ResponseWriter, r *http.Request) {
 
 	qty, _ := strconv.Atoi(quantity)
 	p, _ := strconv.ParseFloat(price, 64)
+	pid, _ := strconv.Atoi(productID)
 
 	flag := ""
 	if p < 1 {
@@ -560,6 +653,14 @@ func handleCartAdd(w http.ResponseWriter, r *http.Request) {
 	}
 	if qty < 0 {
 		flag += `<div class="flag-box">🚩 FLAG{n3g4t1v3_qu4nt1ty}</div><div class="info-box"><p>Negative quantity! This could give you a refund.</p></div>`
+	}
+	// VULN: SKU Swap — check if submitted price doesn't match actual product price
+	if pid > 0 && p >= 1 {
+		var realPrice float64
+		err := db.DB.QueryRow("SELECT price FROM products WHERE id = ?", pid).Scan(&realPrice)
+		if err == nil && realPrice > 0 && p < realPrice*0.5 {
+			flag += `<div class="flag-box">🚩 FLAG{sku_sw4p_ch34p}</div><div class="info-box"><p>SKU swap! Product price doesn't match — you swapped to a cheaper SKU.</p></div>`
+		}
 	}
 
 	total := p * float64(qty)
@@ -647,6 +748,15 @@ func handleOrderDetail(w http.ResponseWriter, r *http.Request) {
 		flag = `<div class="flag-box">🚩 FLAG{1d0r_0rd3r_4cc3ss}</div>`
 	}
 
+	// VULN: Blind SQLi — order ID injected into raw SQL
+	query := fmt.Sprintf("SELECT id FROM orders WHERE id=%s", orderID)
+	var oid int
+	db.DB.QueryRow(query).Scan(&oid)
+
+	if strings.Contains(strings.ToUpper(orderID), "AND") || strings.Contains(strings.ToUpper(orderID), "SUBSTRING") || strings.Contains(strings.ToUpper(orderID), "CASE") {
+		flag += `<div class="flag-box">🚩 FLAG{bl1nd_sql1_3xtr4ct}</div>`
+	}
+
 	render(w, "Order #"+orderID, fmt.Sprintf(`
 	<section class="section">
 		<h2>Order #%s</h2>
@@ -667,6 +777,7 @@ func handleAPIUser(w http.ResponseWriter, r *http.Request) {
 	// VULN: CORS misconfiguration
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Header().Set("Access-Control-Allow-Headers", "*")
+	w.Header().Set("Access-Control-Allow-Methods", "*")
 
 	idStr := strings.TrimPrefix(r.URL.Path, "/api/user/")
 	id, _ := strconv.Atoi(idStr)
@@ -683,6 +794,12 @@ func handleAPIUser(w http.ResponseWriter, r *http.Request) {
 	resp := map[string]interface{}{"id": id, "username": username, "email": email, "role": role}
 	if role == "admin" {
 		resp["flag"] = "FLAG{1d0r_pr0f1l3_l34k}"
+	}
+
+	// CORS flag — detect external origin
+	origin := r.Header.Get("Origin")
+	if origin != "" && !strings.Contains(origin, "localhost") && !strings.Contains(origin, "127.0.0.1") {
+		resp["cors_flag"] = "FLAG{c0rs_m1sc0nf1g}"
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -729,13 +846,34 @@ func handleNewsletter(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if url != "" {
-		// VULN: SSRF — fetches any URL
+		var content string
+
+		// VULN: SSRF — fetches any URL including file:// protocol
+		if strings.HasPrefix(strings.ToLower(url), "file://") {
+			// VULN: file:// protocol — read local files
+			filePath := strings.TrimPrefix(url, "file://")
+			data, err := os.ReadFile(filePath)
+			if err == nil {
+				content = string(data)
+				if len(content) > 5000 {
+					content = content[:5000] + "\n... (truncated)"
+				}
+			} else {
+				content = "Error reading file: " + err.Error()
+			}
+			flag := `<div class="flag-box">🚩 FLAG{f1l3_pr0t0c0l}</div>`
+			render(w, "Newsletter", fmt.Sprintf(`
+			<div class="alert alert-danger">SSRF with file:// protocol!</div>
+			<div class="output-box"><pre>%s</pre></div>%s`, content, flag))
+			return
+		}
+
 		client := &http.Client{Timeout: 5 * time.Second}
 		resp, err := client.Get(url)
 		if err == nil {
 			defer resp.Body.Close()
 			body, _ := io.ReadAll(io.LimitReader(resp.Body, 10000))
-			content := string(body)
+			content = string(body)
 
 			flag := ""
 			if strings.Contains(content, "FLAG{") {
@@ -775,15 +913,33 @@ func handleAdmin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	render(w, "Admin Panel", `
+	// Detect cookie tampering: if role=admin but user_id cookie doesn't match a real admin
+	flag := ""
+	uidCookie, _ := r.Cookie("user_id")
+	if uidCookie != nil {
+		var realRole string
+		db.DB.QueryRow("SELECT role FROM users WHERE id = ?", uidCookie.Value).Scan(&realRole)
+		if realRole != "admin" {
+			flag = `<div class="flag-box">🚩 FLAG{w34k_jwt_s3cr3t}</div>
+			<div class="flag-box">🚩 FLAG{2f4_byp4ss_sk1p}</div>
+			<div class="info-box"><p>You tampered with the role cookie to bypass access control and 2FA!</p></div>`
+		}
+	} else {
+		// No user_id cookie but role=admin — definitely tampered
+		flag = `<div class="flag-box">🚩 FLAG{w34k_jwt_s3cr3t}</div>
+		<div class="flag-box">🚩 FLAG{2f4_byp4ss_sk1p}</div>`
+	}
+
+	render(w, "Admin Panel", fmt.Sprintf(`
 	<section class="section">
 		<h2>Admin Panel</h2>
+		%s
 		<div class="admin-grid">
 			<a href="/admin/invoice" class="cat-card"><span>📄</span>Generate Invoice</a>
 			<a href="/api/export" class="cat-card"><span>📤</span>Export Products</a>
 			<a href="/api/import" class="cat-card"><span>📥</span>Import Products (XML)</a>
 		</div>
-	</section>`)
+	</section>`, flag))
 }
 
 func handleInvoice(w http.ResponseWriter, r *http.Request) {
@@ -899,6 +1055,13 @@ func handleContact(w http.ResponseWriter, r *http.Request) {
 		redirect := r.URL.Query().Get("redirect")
 		if redirect != "" {
 			// VULN: CRLF injection in redirect header
+			if strings.Contains(redirect, "\r") || strings.Contains(redirect, "\n") ||
+				strings.Contains(redirect, "Set-Cookie") || strings.Contains(redirect, "%0d%0a") {
+				render(w, "CRLF Injection", fmt.Sprintf(`
+				<div class="alert alert-danger">CRLF injection detected! Target: %s</div>
+				<div class="flag-box">🚩 FLAG{crlf_h34d3r_1nj3ct}</div>`, redirect))
+				return
+			}
 			w.Header().Set("Location", redirect)
 			w.WriteHeader(302)
 			return
@@ -934,7 +1097,7 @@ func startInternalService() {
 		fmt.Fprint(w, "Internal Admin Panel\n\nSecret: FLAG{ssrf_1nt3rn4l}\nDB Password: phantom_db_2026\n")
 	})
 	mux.HandleFunc("/latest/meta-data/iam/security-credentials/", func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprint(w, `{"AccessKeyId":"AKIAIOSFODNN7EXAMPLE","SecretAccessKey":"FLAG{cl0ud_m3tadata_l3ak}","Token":"FakeToken"}`)
+		fmt.Fprint(w, `{"AccessKeyId":"AKIAIOSFODNN7EXAMPLE","SecretAccessKey":"FLAG{cl0ud_m3t4d4t4}","Token":"FakeToken"}`)
 	})
 	http.ListenAndServe("127.0.0.1:9999", mux)
 }

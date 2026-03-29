@@ -1,6 +1,7 @@
 package shop
 
 import (
+	b64 "encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -50,6 +51,24 @@ func RegisterExtraRoutes(mux *http.ServeMux) {
 
 	// HTTP Security
 	mux.HandleFunc("/api/admin/user", handleMethodTamper)
+
+	// Clickjacking
+	mux.HandleFunc("/clickjack-test", handleClickjackTest)
+
+	// CORS flag
+	mux.HandleFunc("/api/cors-check", handleCORSCheck)
+
+	// CRLF flag
+	mux.HandleFunc("/contact-redirect", handleCRLFRedirect)
+
+	// CSP Bypass
+	mux.HandleFunc("/csp-test", handleCSPBypass)
+
+	// Cookie deserialization
+	mux.HandleFunc("/api/session", handleCookieDeser)
+
+	// Business Logic extras
+	mux.HandleFunc("/api/coupon/apply", handleRaceConditionCoupon)
 
 	// Gift card
 	mux.HandleFunc("/giftcard", handleGiftCard)
@@ -118,8 +137,11 @@ func handleSQLiTimeBased(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	resp := map[string]interface{}{"exists": id > 0, "time_ms": elapsed.Milliseconds()}
 
-	if strings.Contains(username, "CASE") || strings.Contains(username, "sleep") || strings.Contains(username, "LIKE") {
+	if strings.Contains(username, "CASE") || strings.Contains(username, "sleep") || strings.Contains(username, "LIKE") || strings.Contains(username, "randomblob") {
 		resp["flag"] = "FLAG{t1m3_b4s3d_sql1}"
+	}
+	if strings.Contains(username, "INSERT") || strings.Contains(username, ";") {
+		resp["flag_stacked"] = "FLAG{st4ck3d_qu3r13s}"
 	}
 
 	json.NewEncoder(w).Encode(resp)
@@ -435,6 +457,53 @@ func handleMethodTamper(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// ══════ RACE CONDITION (Business Logic) ══════
+
+var couponApplyCount int
+
+func handleRaceConditionCoupon(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	if r.Method != "POST" {
+		json.NewEncoder(w).Encode(map[string]string{
+			"hint": "POST with coupon=VIP50 — send multiple concurrent requests to exploit race condition",
+		})
+		return
+	}
+
+	code := r.FormValue("coupon")
+	if code == "" {
+		code = "VIP50"
+	}
+
+	// VULN: Race condition — no locking on coupon usage check
+	var used, maxUses int
+	err := db.DB.QueryRow("SELECT used, max_uses FROM coupons WHERE code = ?", code).Scan(&used, &maxUses)
+	if err != nil {
+		json.NewEncoder(w).Encode(map[string]string{"error": "coupon not found"})
+		return
+	}
+
+	// Simulate processing delay (makes race condition easier to exploit)
+	time.Sleep(100 * time.Millisecond)
+
+	couponApplyCount++
+	db.DB.Exec("UPDATE coupons SET used = used + 1 WHERE code = ?", code)
+
+	resp := map[string]interface{}{
+		"status":    "applied",
+		"coupon":    code,
+		"apply_count": couponApplyCount,
+	}
+
+	if couponApplyCount > maxUses {
+		resp["flag"] = "FLAG{r4c3_c0nd1t10n}"
+		resp["message"] = "Race condition! Coupon applied more times than max_uses allows."
+	}
+
+	json.NewEncoder(w).Encode(resp)
+}
+
 // ══════ GIFT CARD (Business Logic) ══════
 
 func handleGiftCard(w http.ResponseWriter, r *http.Request) {
@@ -474,4 +543,149 @@ func handleGiftCardRedeem(w http.ResponseWriter, r *http.Request) {
 	<div class="info-box"><p>Code format: GC-[amount]-[number]. Predictable = forgeable.</p></div>
 	%s
 	<a href="/giftcard" class="btn">Back</a>`, code, amount, flag))
+}
+
+// ══════ CLICKJACKING ══════
+
+func handleClickjackTest(w http.ResponseWriter, r *http.Request) {
+	// VULN: No X-Frame-Options header — page can be iframed
+	render(w, "Clickjack Test", `
+	<section class="section">
+		<h2>Clickjacking Test</h2>
+		<div class="alert alert-danger">This page has no X-Frame-Options or frame-ancestors CSP directive!</div>
+		<div class="flag-box">🚩 FLAG{cl1ckj4ck_fr4m3}</div>
+		<div class="info-box">
+			<p>Test it with: <code>&lt;iframe src="http://localhost:9000/checkout"&gt;&lt;/iframe&gt;</code></p>
+			<p>No X-Frame-Options header means attackers can embed this page in a malicious site.</p>
+		</div>
+	</section>`)
+}
+
+// ══════ CORS FLAG ══════
+
+func handleCORSCheck(w http.ResponseWriter, r *http.Request) {
+	origin := r.Header.Get("Origin")
+
+	// VULN: Wildcard CORS — reflects any origin
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Headers", "*")
+	w.Header().Set("Access-Control-Allow-Methods", "*")
+	w.Header().Set("Content-Type", "application/json")
+
+	resp := map[string]interface{}{
+		"message": "CORS headers set with wildcard *",
+		"origin":  origin,
+	}
+
+	if origin != "" && !strings.Contains(origin, "localhost") && !strings.Contains(origin, "127.0.0.1") {
+		resp["flag"] = "FLAG{c0rs_m1sc0nf1g}"
+		resp["vuln"] = "Access-Control-Allow-Origin: * allows any site to read API responses"
+	}
+
+	// Also trigger if just checking headers
+	if r.Method == "OPTIONS" || origin != "" {
+		resp["flag"] = "FLAG{c0rs_m1sc0nf1g}"
+	}
+
+	json.NewEncoder(w).Encode(resp)
+}
+
+// ══════ CRLF FLAG ══════
+
+func handleCRLFRedirect(w http.ResponseWriter, r *http.Request) {
+	redirect := r.URL.Query().Get("redirect")
+
+	if redirect == "" {
+		render(w, "Contact Redirect", `
+		<div class="info-box">
+			<p><strong>Endpoint:</strong> <code>/contact-redirect?redirect=URL</code></p>
+			<p>Try: <code>/contact-redirect?redirect=http://example.com%0d%0aSet-Cookie:%20admin=true</code></p>
+		</div>`)
+		return
+	}
+
+	// VULN: CRLF injection — detect %0d%0a or actual \r\n in redirect
+	if strings.Contains(redirect, "\r") || strings.Contains(redirect, "\n") ||
+		strings.Contains(redirect, "Set-Cookie") || strings.Contains(redirect, "%0d%0a") {
+		render(w, "CRLF Injection", fmt.Sprintf(`
+		<div class="alert alert-danger">CRLF injection detected in redirect: %s</div>
+		<div class="flag-box">🚩 FLAG{crlf_h34d3r_1nj3ct}</div>
+		<div class="info-box"><p>An attacker can inject arbitrary HTTP headers via CRLF characters.</p></div>`, redirect))
+		return
+	}
+
+	w.Header().Set("Location", redirect)
+	w.WriteHeader(302)
+}
+
+// ══════ CSP BYPASS ══════
+
+func handleCSPBypass(w http.ResponseWriter, r *http.Request) {
+	payload := r.URL.Query().Get("payload")
+
+	flag := ""
+	if payload != "" {
+		payloadLower := strings.ToLower(payload)
+		if strings.Contains(payloadLower, "script") || strings.Contains(payloadLower, "eval") ||
+			strings.Contains(payloadLower, "onerror") || strings.Contains(payloadLower, "onload") {
+			flag = `<div class="flag-box">🚩 FLAG{csp_byp4ss_xss}</div>`
+		}
+	}
+
+	render(w, "CSP Test", fmt.Sprintf(`
+	<section class="section">
+		<h2>CSP Bypass Test</h2>
+		<form method="GET" class="search-bar">
+			<input type="text" name="payload" value="%s" class="search-input" placeholder="XSS payload...">
+			<button type="submit" class="btn">Test</button>
+		</form>
+		<div class="output-box"><pre>CSP: default-src * 'unsafe-inline' 'unsafe-eval'</pre></div>
+		<div class="info-box"><p>The CSP policy allows 'unsafe-inline' and 'unsafe-eval' — effectively no protection.</p></div>
+		<div>%s</div>
+		%s
+	</section>`, payload, payload, flag))
+}
+
+// ══════ COOKIE DESERIALIZATION ══════
+
+func handleCookieDeser(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	sessionCookie, _ := r.Cookie("session")
+	if sessionCookie == nil {
+		json.NewEncoder(w).Encode(map[string]string{
+			"hint":    "Set a 'session' cookie with base64-encoded JSON: {\"user\":\"admin\",\"role\":\"admin\"}",
+			"example": "curl -b 'session=eyJ1c2VyIjoiYWRtaW4iLCJyb2xlIjoiYWRtaW4ifQ==' http://localhost:9000/api/session",
+		})
+		return
+	}
+
+	// VULN: Insecure deserialization — decode base64 cookie and trust its contents
+	import_data, err := base64Decode(sessionCookie.Value)
+	if err != nil {
+		json.NewEncoder(w).Encode(map[string]string{"error": "invalid base64 in session cookie"})
+		return
+	}
+
+	var sessionData map[string]interface{}
+	if err := json.Unmarshal(import_data, &sessionData); err != nil {
+		json.NewEncoder(w).Encode(map[string]string{"error": "invalid JSON in session cookie"})
+		return
+	}
+
+	resp := map[string]interface{}{
+		"session": sessionData,
+		"message": "Session decoded from cookie",
+	}
+
+	if role, ok := sessionData["role"]; ok && role == "admin" {
+		resp["flag"] = "FLAG{c00k13_d3s3r14l}"
+		resp["vuln"] = "Session cookie decoded and trusted without server-side validation!"
+	}
+
+	json.NewEncoder(w).Encode(resp)
+}
+
+func base64Decode(s string) ([]byte, error) {
+	return b64.StdEncoding.DecodeString(s)
 }

@@ -10,6 +10,10 @@ import (
 
 func render(w http.ResponseWriter, title, content string) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	// VULN: Weak CSP — allows unsafe-inline and unsafe-eval (bypassable)
+	w.Header().Set("Content-Security-Policy", "default-src * 'unsafe-inline' 'unsafe-eval'; script-src * 'unsafe-inline' 'unsafe-eval'")
+	// VULN: No X-Frame-Options — clickjacking possible
+	// Intentionally NOT setting X-Frame-Options or frame-ancestors
 	fmt.Fprintf(w, `<!DOCTYPE html>
 <html lang="en">
 <head>
