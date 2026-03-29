@@ -98,8 +98,14 @@ func Init() {
 		category TEXT,
 		difficulty TEXT,
 		points INTEGER,
-		description TEXT
+		description TEXT,
+		captured INTEGER DEFAULT 0,
+		captured_at DATETIME DEFAULT NULL
 	)`)
+
+	// Migration: add captured columns if table already exists without them
+	DB.Exec(`ALTER TABLE flags ADD COLUMN captured INTEGER DEFAULT 0`)
+	DB.Exec(`ALTER TABLE flags ADD COLUMN captured_at DATETIME DEFAULT NULL`)
 
 	// Seed data
 	seedData()

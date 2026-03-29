@@ -98,24 +98,146 @@ func handleVulnList(w http.ResponseWriter, r *http.Request) {
 // ══════════════════════════════════════════
 
 func handleScoreboard(w http.ResponseWriter, r *http.Request) {
-	var totalFlags, totalPoints int
+	var totalFlags, totalPoints, capturedFlags, capturedPoints int
 	db.DB.QueryRow("SELECT COUNT(*), COALESCE(SUM(points),0) FROM flags").Scan(&totalFlags, &totalPoints)
+	db.DB.QueryRow("SELECT COUNT(*), COALESCE(SUM(points),0) FROM flags WHERE captured = 1").Scan(&capturedFlags, &capturedPoints)
+
+	// Get per-category breakdown
+	rows, _ := db.DB.Query(`
+		SELECT category,
+			COUNT(*) as total,
+			SUM(CASE WHEN captured = 1 THEN 1 ELSE 0 END) as found,
+			SUM(points) as total_pts,
+			SUM(CASE WHEN captured = 1 THEN points ELSE 0 END) as found_pts
+		FROM flags GROUP BY category ORDER BY category`)
+
+	catRows := ""
+	if rows != nil {
+		defer rows.Close()
+		for rows.Next() {
+			var cat string
+			var total, found, totalPts, foundPts int
+			rows.Scan(&cat, &total, &found, &totalPts, &foundPts)
+			pct := 0
+			if total > 0 {
+				pct = found * 100 / total
+			}
+			color := "#ef4444"
+			if pct == 100 {
+				color = "#10b981"
+			} else if pct > 0 {
+				color = "#f59e0b"
+			}
+			catRows += fmt.Sprintf(`<tr>
+				<td style="font-weight:600">%s</td>
+				<td>%d / %d</td>
+				<td>%d / %d</td>
+				<td><div style="background:#1f2937;border-radius:4px;height:8px;width:100px;display:inline-block;vertical-align:middle;">
+					<div style="background:%s;height:100%%;border-radius:4px;width:%d%%"></div>
+				</div> <span style="font-size:12px;color:#9ca3af">%d%%</span></td>
+			</tr>`, cat, found, total, foundPts, totalPts, color, pct, pct)
+		}
+	}
+
+	// Get recently captured flags
+	recentRows, _ := db.DB.Query(`SELECT name, category, points, captured_at FROM flags WHERE captured = 1 ORDER BY captured_at DESC LIMIT 10`)
+	recentHTML := ""
+	if recentRows != nil {
+		defer recentRows.Close()
+		for recentRows.Next() {
+			var name, cat, capturedAt string
+			var pts int
+			recentRows.Scan(&name, &cat, &pts, &capturedAt)
+			recentHTML += fmt.Sprintf(`<tr><td style="color:#10b981">%s</td><td>%s</td><td>%d</td><td style="color:#6b7280;font-size:12px">%s</td></tr>`, name, cat, pts, capturedAt)
+		}
+	}
+	if recentHTML == "" {
+		recentHTML = `<tr><td colspan="4" style="color:#6b7280;text-align:center;padding:20px">No flags captured yet. Start exploiting!</td></tr>`
+	}
+
+	pctTotal := 0
+	if totalFlags > 0 {
+		pctTotal = capturedFlags * 100 / totalFlags
+	}
 
 	render(w, "Scoreboard", fmt.Sprintf(`
 	<section class="section">
 		<div class="section-header"><h2>Scoreboard</h2></div>
 		<div class="stats-row">
-			<div class="stat-card"><div class="stat-value" style="color:#a78bfa">%d</div><div class="stat-label">Total Flags</div></div>
-			<div class="stat-card"><div class="stat-value" style="color:#3b82f6">%d</div><div class="stat-label">Total Points</div></div>
-			<div class="stat-card"><div class="stat-value" style="color:#10b981">50</div><div class="stat-label">Vulnerabilities</div></div>
+			<div class="stat-card"><div class="stat-value" style="color:#10b981">%d / %d</div><div class="stat-label">Flags Captured</div></div>
+			<div class="stat-card"><div class="stat-value" style="color:#3b82f6">%d / %d</div><div class="stat-label">Points Earned</div></div>
+			<div class="stat-card"><div class="stat-value" style="color:#a78bfa">%d%%</div><div class="stat-label">Completion</div></div>
 		</div>
+
+		<div style="background:#111827;border:1px solid #1f2937;border-radius:12px;padding:20px;margin-bottom:16px;">
+			<h3 style="margin-bottom:12px;color:#e5e7eb;">Progress by Category</h3>
+			<table style="width:100%%;border-collapse:collapse;">
+				<thead><tr style="border-bottom:1px solid #374151;">
+					<th style="text-align:left;padding:8px;color:#9ca3af;font-size:12px">CATEGORY</th>
+					<th style="text-align:left;padding:8px;color:#9ca3af;font-size:12px">FLAGS</th>
+					<th style="text-align:left;padding:8px;color:#9ca3af;font-size:12px">POINTS</th>
+					<th style="text-align:left;padding:8px;color:#9ca3af;font-size:12px">PROGRESS</th>
+				</tr></thead>
+				<tbody>%s</tbody>
+			</table>
+		</div>
+
+		<div style="background:#111827;border:1px solid #1f2937;border-radius:12px;padding:20px;margin-bottom:16px;">
+			<h3 style="margin-bottom:12px;color:#e5e7eb;">Recently Captured</h3>
+			<table style="width:100%%;border-collapse:collapse;">
+				<thead><tr style="border-bottom:1px solid #374151;">
+					<th style="text-align:left;padding:8px;color:#9ca3af;font-size:12px">FLAG</th>
+					<th style="text-align:left;padding:8px;color:#9ca3af;font-size:12px">CATEGORY</th>
+					<th style="text-align:left;padding:8px;color:#9ca3af;font-size:12px">POINTS</th>
+					<th style="text-align:left;padding:8px;color:#9ca3af;font-size:12px">CAPTURED AT</th>
+				</tr></thead>
+				<tbody>%s</tbody>
+			</table>
+		</div>
+
 		<div class="info-box">
 			<h3>How to Submit Flags</h3>
-			<p>When you exploit a vulnerability, you'll see a flag like <code>FLAG{example}</code>.</p>
-			<p>Submit it via the API:</p>
-			<pre>curl -X POST http://localhost:8080/flag -H "Content-Type: application/json" -d '{"flag":"FLAG{example}"}'</pre>
+			<p>When you exploit a vulnerability, you'll see a flag like <code>FLAG{example}</code>. Submit via API or the form below:</p>
+			<pre>curl -X POST http://localhost:9000/flag -H "Content-Type: application/json" -d '{"flag":"FLAG{example}"}'</pre>
+			<div style="margin-top:16px;display:flex;gap:8px;">
+				<input type="text" id="flag-input" placeholder="FLAG{...}" style="flex:1;padding:10px 14px;background:#0a0e1a;border:1px solid #2a3050;border-radius:8px;color:#e8ecf4;font-size:14px;font-family:monospace;">
+				<button onclick="submitFlag()" style="padding:10px 20px;background:#7c3aed;color:white;border:none;border-radius:8px;font-weight:600;cursor:pointer;">Submit Flag</button>
+			</div>
+			<div id="flag-result" style="margin-top:10px;font-size:14px;"></div>
 		</div>
-	</section>`, totalFlags, totalPoints))
+	</section>
+	<script>
+	async function submitFlag() {
+		const input = document.getElementById('flag-input');
+		const result = document.getElementById('flag-result');
+		const flag = input.value.trim();
+		if (!flag) return;
+		try {
+			const resp = await fetch('/flag', {
+				method: 'POST',
+				headers: {'Content-Type': 'application/json'},
+				body: JSON.stringify({flag: flag})
+			});
+			const data = await resp.json();
+			if (data.correct) {
+				if (data.already) {
+					result.innerHTML = '<span style="color:#f59e0b;">&#9888; ' + data.message + '</span>';
+				} else {
+					result.innerHTML = '<span style="color:#10b981;">&#10004; ' + data.message + '</span>';
+					setTimeout(() => location.reload(), 1500);
+				}
+			} else {
+				result.innerHTML = '<span style="color:#ef4444;">&#10008; ' + data.message + '</span>';
+			}
+			input.value = '';
+		} catch(e) {
+			result.innerHTML = '<span style="color:#ef4444;">Error: ' + e.message + '</span>';
+		}
+	}
+	document.getElementById('flag-input').addEventListener('keydown', function(e) { if (e.key === 'Enter') submitFlag(); });
+	</script>`,
+		capturedFlags, totalFlags, capturedPoints, totalPoints, pctTotal,
+		catRows, recentHTML))
 }
 
 func handleFlagSubmit(w http.ResponseWriter, r *http.Request) {
@@ -131,13 +253,23 @@ func handleFlagSubmit(w http.ResponseWriter, r *http.Request) {
 	json.NewDecoder(r.Body).Decode(&req)
 
 	var name, category string
-	var points int
-	err := db.DB.QueryRow("SELECT name, category, points FROM flags WHERE value = ?", req.Flag).Scan(&name, &category, &points)
+	var points, captured int
+	err := db.DB.QueryRow("SELECT name, category, points, captured FROM flags WHERE value = ?", req.Flag).Scan(&name, &category, &points, &captured)
 
 	w.Header().Set("Content-Type", "application/json")
 	if err != nil {
 		json.NewEncoder(w).Encode(map[string]interface{}{"correct": false, "message": "Invalid flag"})
+	} else if captured == 1 {
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"correct":  true,
+			"message":  fmt.Sprintf("Already captured! %s (%s) — %d points", name, category, points),
+			"name":     name,
+			"category": category,
+			"points":   points,
+			"already":  true,
+		})
 	} else {
+		db.DB.Exec("UPDATE flags SET captured = 1, captured_at = CURRENT_TIMESTAMP WHERE value = ?", req.Flag)
 		json.NewEncoder(w).Encode(map[string]interface{}{
 			"correct":  true,
 			"message":  fmt.Sprintf("Correct! %s (%s) — %d points", name, category, points),
