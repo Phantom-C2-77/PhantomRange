@@ -1,11 +1,17 @@
 # PhantomShop
 
 ```
-   ___  __                __             ____  __
-  / _ \/ /  ___ ____  ___/ /____  __ _  / __/ / /  ___  ___
- / ___/ _ \/ _ '/ _ \/ __/ __/ _ \/  ' \_\ \ / _ \/ _ \/ _ \
-/_/  /_//_/\_,_/_//_/\__/\__/\___/_/_/_/___//_//_/\___/ .__/
-                                                      /_/
+                      ___
+                 ____/   \____
+            ____/    _   _    \____
+       ____/   _____/ \_/ \_____   \____
+  ____/  _____/  PHANTOM SHOP  \_____  \____
+ /______/____________________________\______\
+        \___        ✦        ___/
+            \_______•_______/
+
+  [::] PhantomShop — Vulnerable E-Commerce Training
+  [::] 50 Vulnerabilities | 14 Categories | Find Every Flag
 ```
 
 **A realistic vulnerable e-commerce application for penetration testing practice.**
