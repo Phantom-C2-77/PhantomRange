@@ -24,7 +24,7 @@ func render(w http.ResponseWriter, title, content string) {
 </head>
 <body>
 <nav class="navbar">
-	<a href="/" class="brand">👻 PhantomShop</a>
+	<a href="/" class="brand"><svg viewBox="0 0 100 50" width="28" style="vertical-align:middle;margin-right:6px;filter:drop-shadow(0 0 4px rgba(167,139,250,0.5))"><defs><linearGradient id="b2g" x1="0%%" y1="0%%" x2="100%%" y2="100%%"><stop offset="0%%" style="stop-color:#a78bfa"/><stop offset="100%%" style="stop-color:#6d28d9"/></linearGradient></defs><path d="M50 8 L15 30 L2 28 L8 32 L15 35 L28 38 L42 42 L50 44 L58 42 L72 38 L85 35 L92 32 L98 28 L85 30 Z" fill="url(#b2g)"/><path d="M50 12 L35 28 L50 36 L65 28 Z" fill="rgba(10,14,26,0.4)"/><circle cx="50" cy="26" r="2" fill="#a78bfa" opacity="0.8"/></svg>PhantomShop</a>
 	<div class="nav-links">
 		<a href="/products">Shop</a>
 		<a href="/search">Search</a>
@@ -36,7 +36,7 @@ func render(w http.ResponseWriter, title, content string) {
 </nav>
 <main>%s</main>
 <footer class="footer">
-	<p>👻 PhantomShop — Intentionally Vulnerable E-Commerce | <a href="/vulns">50 Vulnerabilities</a> | <a href="https://github.com/Phantom-C2-77/PhantomRange">GitHub</a></p>
+	<p>✦ PhantomShop — Intentionally Vulnerable E-Commerce | <a href="/vulns">50 Vulnerabilities</a> | <a href="https://github.com/Phantom-C2-77/PhantomRange">GitHub</a></p>
 </footer>
 </body>
 </html>`, title, content)
