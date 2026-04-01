@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/Phantom-C2-77/PhantomRange/internal/shop"
+	"github.com/phantom-offensive/PhantomRange/internal/shop"
 )
 
 func main() {

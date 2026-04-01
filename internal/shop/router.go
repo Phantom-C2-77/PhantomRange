@@ -3,7 +3,7 @@ package shop
 import (
 	"net/http"
 
-	"github.com/Phantom-C2-77/PhantomRange/internal/db"
+	"github.com/phantom-offensive/PhantomRange/internal/db"
 )
 
 // App is the main PhantomShop application.

@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Phantom-C2-77/PhantomRange/internal/db"
+	"github.com/phantom-offensive/PhantomRange/internal/db"
 )
 
 func init() {

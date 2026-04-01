@@ -38,7 +38,7 @@ Every vulnerability is embedded naturally into working e-commerce features: prod
 ### Docker (recommended)
 
 ```bash
-git clone https://github.com/Phantom-C2-77/PhantomRange.git
+git clone https://github.com/phantom-offensive/PhantomRange.git
 cd PhantomRange
 docker compose up -d
 # Open http://localhost:9000
@@ -47,7 +47,7 @@ docker compose up -d
 ### From Source
 
 ```bash
-git clone https://github.com/Phantom-C2-77/PhantomRange.git
+git clone https://github.com/phantom-offensive/PhantomRange.git
 cd PhantomRange
 make run
 # Or: go run ./cmd/server/
@@ -189,7 +189,7 @@ Single binary, zero config. Uses Go standard library + SQLite (pure Go driver). 
 
 **Opeyemi Kolawole** — Penetration Tester
 
-- GitHub: [Phantom-C2-77](https://github.com/Phantom-C2-77)
+- GitHub: [phantom-offensive](https://github.com/phantom-offensive)
 
 ## License
 

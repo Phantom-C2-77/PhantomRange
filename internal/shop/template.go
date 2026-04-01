@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/Phantom-C2-77/PhantomRange/internal/db"
+	"github.com/phantom-offensive/PhantomRange/internal/db"
 )
 
 func render(w http.ResponseWriter, title, content string) {
@@ -36,7 +36,7 @@ func render(w http.ResponseWriter, title, content string) {
 </nav>
 <main>%s</main>
 <footer class="footer">
-	<p>✦ PhantomShop — Intentionally Vulnerable E-Commerce | <a href="/vulns">50 Vulnerabilities</a> | <a href="https://github.com/Phantom-C2-77/PhantomRange">GitHub</a></p>
+	<p>✦ PhantomShop — Intentionally Vulnerable E-Commerce | <a href="/vulns">50 Vulnerabilities</a> | <a href="https://github.com/phantom-offensive/PhantomRange">GitHub</a></p>
 </footer>
 </body>
 </html>`, title, content)

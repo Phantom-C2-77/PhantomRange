@@ -1,4 +1,4 @@
-module github.com/Phantom-C2-77/PhantomRange
+module github.com/phantom-offensive/PhantomRange
 
 go 1.25.0
 
