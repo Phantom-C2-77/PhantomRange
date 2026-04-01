@@ -4,5 +4,6 @@ data/scoreboard.json
 build/
 .DS_Store
 server
+phantomshop
 data/shop.db
 docs/walkthroughs/
