@@ -24,7 +24,7 @@ func main() {
             \_______•_______/`)
 	fmt.Print("\033[0m")
 	fmt.Println("\n  \033[36m[::] PhantomShop — Vulnerable E-Commerce Training\033[0m")
-	fmt.Println("  \033[2m[::] 50 Vulnerabilities | 10 Categories | 8,750 Points\033[0m")
+	fmt.Println("  \033[2m[::] 50 Vulnerabilities | 14 Categories | 8,750 Points\033[0m")
 	fmt.Println()
 	fmt.Printf("  \033[32m[+]\033[0m Shop:         http://localhost%s\n", *addr)
 	fmt.Printf("  \033[32m[+]\033[0m Vulns:        http://localhost%s/vulns\n", *addr)
