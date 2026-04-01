@@ -189,7 +189,6 @@ Single binary, zero config. Uses Go standard library + SQLite (pure Go driver). 
 **Opeyemi Kolawole** — Penetration Tester
 
 - GitHub: [Phantom-C2-77](https://github.com/Phantom-C2-77)
-- LinkedIn: [Opeyemi Kolawole](https://linkedin.com/in/opeyemi-kolawole-463664204)
 
 ## License
 
