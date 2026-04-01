@@ -47,37 +47,40 @@ func render(w http.ResponseWriter, title, content string) {
 // ══════════════════════════════════════════
 
 func handleVulnList(w http.ResponseWriter, r *http.Request) {
-	rows, _ := db.DB.Query("SELECT name, value, category, difficulty, points, description FROM flags ORDER BY category, difficulty")
+	rows, _ := db.DB.Query("SELECT name, value, category, difficulty, points, description, COALESCE(hint,'') FROM flags ORDER BY category, difficulty")
 	defer rows.Close()
 
 	var cards string
 	lastCat := ""
+	catCount := 0
 	for rows.Next() {
-		var name, value, cat, diff, desc string
+		var name, value, cat, diff, desc, hint string
 		var pts int
-		rows.Scan(&name, &value, &cat, &diff, &pts, &desc)
+		rows.Scan(&name, &value, &cat, &diff, &pts, &desc, &hint)
 
 		if cat != lastCat {
 			if lastCat != "" {
 				cards += `</div>`
 			}
+			catCount++
 			cards += fmt.Sprintf(`<div class="category-title">%s</div><div class="vuln-grid">`, cat)
 			lastCat = cat
 		}
 
 		diffClass := "difficulty-" + diff
+		hintID := "hint-" + name
 		cards += fmt.Sprintf(`
 		<div class="vuln-card">
 			<div class="vuln-header">
 				<span class="vuln-name">%s</span>
 				<span class="%s">%s</span>
 			</div>
-			<p class="vuln-desc">%s</p>
 			<div class="vuln-footer">
 				<span class="points">%d pts</span>
-				<code class="flag-hint">FLAG{...}</code>
+				<button class="hint-btn" onclick="toggleHint('%s')">Show Hint</button>
 			</div>
-		</div>`, desc, diffClass, diff, desc, pts)
+			<div class="hint-text" id="%s" style="display:none;">%s</div>
+		</div>`, name, diffClass, diff, pts, hintID, hintID, hint)
 	}
 	if lastCat != "" {
 		cards += `</div>`
@@ -90,7 +93,22 @@ func handleVulnList(w http.ResponseWriter, r *http.Request) {
 			<p class="muted">Find and exploit each vulnerability to capture the flag.</p>
 		</div>
 		%s
-	</section>`, cards))
+	</section>
+	<script>
+	function toggleHint(id) {
+		var el = document.getElementById(id);
+		var btn = el.previousElementSibling.querySelector('.hint-btn');
+		if (el.style.display === 'none') {
+			el.style.display = 'block';
+			btn.textContent = 'Hide Hint';
+			btn.classList.add('hint-btn-active');
+		} else {
+			el.style.display = 'none';
+			btn.textContent = 'Show Hint';
+			btn.classList.remove('hint-btn-active');
+		}
+	}
+	</script>`, cards))
 }
 
 // ══════════════════════════════════════════
