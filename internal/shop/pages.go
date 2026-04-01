@@ -460,8 +460,11 @@ func handleResetPassword(w http.ResponseWriter, r *http.Request) {
 	var resetEmail string
 	db.DB.QueryRow("SELECT email FROM users WHERE reset_token = ?", token).Scan(&resetEmail)
 
-	result, _ := db.DB.Exec("UPDATE users SET password = ?, reset_token = '' WHERE reset_token = ?", password, token)
-	affected, _ := result.RowsAffected()
+	result, err := db.DB.Exec("UPDATE users SET password = ?, reset_token = '' WHERE reset_token = ?", password, token)
+	var affected int64
+	if err == nil && result != nil {
+		affected, _ = result.RowsAffected()
+	}
 	if affected > 0 {
 		flag := ""
 		if resetEmail != "" {

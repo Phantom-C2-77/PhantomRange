@@ -10,8 +10,8 @@
 
 <p align="center">
   <img src="https://img.shields.io/badge/vulnerabilities-50-red?style=flat-square" alt="50 Vulnerabilities">
-  <img src="https://img.shields.io/badge/categories-14-purple?style=flat-square" alt="14 Categories">
-  <img src="https://img.shields.io/badge/points-8%2C750-blue?style=flat-square" alt="8,750 Points">
+  <img src="https://img.shields.io/badge/categories-18-purple?style=flat-square" alt="18 Categories">
+  <img src="https://img.shields.io/badge/points-10%2C400-blue?style=flat-square" alt="10,400 Points">
   <img src="https://img.shields.io/badge/language-Go-00ADD8?style=flat-square&logo=go&logoColor=white" alt="Go">
   <img src="https://img.shields.io/badge/license-BSD--3-green?style=flat-square" alt="License">
   <img src="https://img.shields.io/badge/docker-ready-2496ED?style=flat-square&logo=docker&logoColor=white" alt="Docker">
@@ -19,7 +19,7 @@
 
 ---
 
-PhantomShop is a fully functional online fashion store with **50 hidden security vulnerabilities** across **14 categories**. Built for security professionals, students, and CTF enthusiasts who want hands-on practice exploiting real-world web application flaws — not contrived textbook examples.
+PhantomShop is a fully functional online fashion store with **50 hidden security vulnerabilities** across **18 categories**. Built for security professionals, students, and CTF enthusiasts who want hands-on practice exploiting real-world web application flaws — not contrived textbook examples.
 
 Every vulnerability is embedded naturally into working e-commerce features: product search, checkout, user profiles, admin panels, APIs, and more.
 
@@ -84,7 +84,7 @@ make reset-db       # Wipe database (re-seeds on restart)
 - Built-in vulnerability tracker at `/vulns`
 - Live scoreboard with progress tracking at `/scoreboard`
 - Difficulty ratings: Easy, Medium, Hard
-- 8,750 total points to earn
+- 10,400 total points to earn
 
 ---
 
@@ -108,6 +108,7 @@ make reset-db       # Wipe database (re-seeds on restart)
 | Cryptography | 1 | Predictable password reset tokens |
 | CORS | 1 | Wildcard origin misconfiguration |
 | XXE | 1 | XML external entity in product import |
+| File Inclusion | 1 | Local file inclusion in template rendering |
 | 2FA Bypass | 1 | Cookie-based 2FA bypass |
 
 ---

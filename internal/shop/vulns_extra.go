@@ -73,6 +73,9 @@ func RegisterExtraRoutes(mux *http.ServeMux) {
 	// Gift card
 	mux.HandleFunc("/giftcard", handleGiftCard)
 	mux.HandleFunc("/giftcard/redeem", handleGiftCardRedeem)
+
+	// LFI
+	mux.HandleFunc("/page", handleLFITemplate)
 }
 
 // ══════ SQL INJECTION EXTRAS ══════
@@ -688,4 +691,46 @@ func handleCookieDeser(w http.ResponseWriter, r *http.Request) {
 
 func base64Decode(s string) ([]byte, error) {
 	return b64.StdEncoding.DecodeString(s)
+}
+
+// ══════ LOCAL FILE INCLUSION ══════
+
+func handleLFITemplate(w http.ResponseWriter, r *http.Request) {
+	page := r.URL.Query().Get("name")
+
+	if page == "" {
+		render(w, "Pages", `
+		<div class="info-box">
+			<p><strong>Endpoint:</strong> <code>/page?name=about</code></p>
+			<p>Loads a page template by name. Try: <code>/page?name=../../../etc/passwd</code></p>
+		</div>`)
+		return
+	}
+
+	// VULN: Local File Inclusion — user controls file path for template loading
+	if strings.Contains(page, "..") || strings.Contains(page, "/etc/") || strings.Contains(page, "passwd") {
+		content := ""
+		data, err := os.ReadFile(page)
+		if err == nil {
+			content = string(data)
+			if len(content) > 3000 {
+				content = content[:3000] + "\n... (truncated)"
+			}
+		} else {
+			content = "File read error: " + err.Error()
+		}
+
+		render(w, "LFI", fmt.Sprintf(`
+		<div class="alert alert-danger">Local File Inclusion! Reading: %s</div>
+		<div class="output-box"><pre>%s</pre></div>
+		<div class="flag-box">🚩 FLAG{l0c4l_f1l3_1nclud3}</div>
+		<div class="info-box"><p>The server loaded an arbitrary file as a template — classic LFI vulnerability.</p></div>`, page, content))
+		return
+	}
+
+	render(w, "Page: "+page, fmt.Sprintf(`
+	<section class="section">
+		<h2>%s</h2>
+		<p>This is the %s page template.</p>
+	</section>`, page, page))
 }
